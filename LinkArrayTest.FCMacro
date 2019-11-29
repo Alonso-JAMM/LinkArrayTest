@@ -1,0 +1,14 @@
+from os.path import expanduser
+from PySide import QtGui, QtCore
+
+home = expanduser("~")
+uiLocation = home + "/.FreeCAD/Macro/LinkArrayTest.ui" # Location I used to store the .ui file
+
+
+class LinkArrayTestTaskPanel:
+    def __init__(self):
+        self.form = Gui.PySideUic.loadUi(uiLocation)
+
+
+panel = LinkArrayTestTaskPanel()
+Gui.Control.showDialog(panel)
