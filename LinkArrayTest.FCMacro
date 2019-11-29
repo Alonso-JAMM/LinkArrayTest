@@ -1,3 +1,5 @@
+# Check https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/TemplatePyMod/TaskPanel.py
+
 from os.path import expanduser
 from PySide import QtGui, QtCore
 
@@ -5,10 +7,48 @@ home = expanduser("~")
 uiLocation = home + "/.FreeCAD/Macro/LinkArrayTest.ui" # Location I used to store the .ui file
 
 
+class SelectionObserver:
+    def addSelection(self, doc, obj, sub, pos):
+        test = Gui.Selection.getSelectionEx("", 0)[0]
+        # the first element is the name of the object we want to use
+        # Note that if an object inside a sub-assembly is selected, this method will get the entire sub-assembly
+        splitedName = test.SubElementNames[0].split(".")
+        print(splitedName[0])
+        #print(App.ActiveDocument.Name)
+        #print(test.SubElementNames)     # getSelectionEx
+
+
 class LinkArrayTestTaskPanel:
     def __init__(self):
         self.form = Gui.PySideUic.loadUi(uiLocation)
+        # connect icons
+        self.form.baseSelect.clicked.connect(self.baseSelectClick)
+        self.baseSelect = False  # used to know if we are looking for bases
+        self.obs = None
+
+    def baseSelectClick(self):
+        if not self.baseSelect:
+            self.form.baseSelect.setText("Selecting")
+            self.obs = SelectionObserver()
+            Gui.Selection.addObserver(self.obs)
+        else:
+            self.form.baseSelect.setText("Select")
+            Gui.Selection.removeObserver(self.obs)
+        self.baseSelect = not self.baseSelect   # Toggle every time the button is pressed
+
+    def accept(self):
+        Gui.Control.closeDialog()
+        if self.obs is not None:
+            Gui.Selection.removeObserver(self.obs)  # make sure that the selection observer is deleted
+
+    def reject(self):
+        Gui.Control.closeDialog()
+        if self.obs is not None:
+            Gui.Selection.removeObserver(self.obs)  # make sure that the selection observer is deleted
 
 
 panel = LinkArrayTestTaskPanel()
 Gui.Control.showDialog(panel)
+
+#obs = SelectionObserver()
+#Gui.Selection.addObserver(obs)
