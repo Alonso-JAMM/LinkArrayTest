@@ -7,13 +7,25 @@ home = expanduser("~")
 uiLocation = home + "/.FreeCAD/Macro/LinkArrayTest.ui" # Location I used to store the .ui file
 
 
+def onDelete(key):
+    if key == QtCore.Qt.Key_Delete:
+        print("delete")
+
+
+
 class SelectionObserver:
+    def __init__(self, selList=None):
+        self.baseSelection = None
+        self.selList = selList  # list to store selections
+
     def addSelection(self, doc, obj, sub, pos):
         test = Gui.Selection.getSelectionEx("", 0)[0]
         # the first element is the name of the object we want to use
         # Note that if an object inside a sub-assembly is selected, this method will get the entire sub-assembly
         splitedName = test.SubElementNames[0].split(".")
-        print(splitedName[0])
+        if self.selList and not self.selList.findItems(splitedName[0], QtCore.Qt.MatchContains):
+            self.selList.addItem(splitedName[0])
+
         #print(App.ActiveDocument.Name)
         #print(test.SubElementNames)     # getSelectionEx
 
@@ -21,19 +33,25 @@ class SelectionObserver:
 class LinkArrayTestTaskPanel:
     def __init__(self):
         self.form = Gui.PySideUic.loadUi(uiLocation)
-        # connect icons
-        self.form.baseSelect.clicked.connect(self.baseSelectClick)
         self.baseSelect = False  # used to know if we are looking for bases
         self.obs = None
+        shortcut = QtGui.QShortcut(QtGui.QKeySequence.Delete, self.form.baseList)  # shortcut to delete key
+        # connect signals and slots
+        self.form.baseSelect.clicked.connect(self.baseSelectClick)
+
+        QtCore.QObject.connect(shortcut, QtCore.SIGNAL("activated()"), self.deketeSel)  # To delete elements in list
 
     def baseSelectClick(self):
         if not self.baseSelect:
             self.form.baseSelect.setText("Selecting")
-            self.obs = SelectionObserver()
+            self.obs = SelectionObserver(self.form.baseList)
             Gui.Selection.addObserver(self.obs)
+
         else:
             self.form.baseSelect.setText("Select")
+            self.obs.selList = None     # stop selecting more items
             Gui.Selection.removeObserver(self.obs)
+            #self.deleteKeyCb =
         self.baseSelect = not self.baseSelect   # Toggle every time the button is pressed
 
     def accept(self):
@@ -45,6 +63,9 @@ class LinkArrayTestTaskPanel:
         Gui.Control.closeDialog()
         if self.obs is not None:
             Gui.Selection.removeObserver(self.obs)  # make sure that the selection observer is deleted
+
+    def deketeSel(self):
+        print("hello")
 
 
 panel = LinkArrayTestTaskPanel()
