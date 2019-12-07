@@ -23,11 +23,23 @@ class SelectionObserver:
         # the first element is the name of the object we want to use
         # Note that if an object inside a sub-assembly is selected, this method will get the entire sub-assembly
         splitedName = test.SubElementNames[0].split(".")
-        if self.selList and not self.selList.findItems(splitedName[0], QtCore.Qt.MatchContains):
+        if self.selList and not self.selList.findItems(splitedName[0], QtCore.Qt.MatchExactly):
             self.selList.addItem(splitedName[0])
 
-        #print(App.ActiveDocument.Name)
-        #print(test.SubElementNames)     # getSelectionEx
+
+class CustomEventFilter(QtCore.QObject):
+    def eventFilter(self, obj, event):
+        # We will look if focus to the qlistwidget is lost in order to deselect items
+        if event.type() == QtCore.QEvent.FocusOut:
+            selectedItems = obj.selectedItems()
+            for item in selectedItems:
+                item.setSelected(False)
+            return True
+        elif event.type() == QtCore.QEvent.FocusIn:
+            Gui.Selection.clearSelection()      # we don't need the selected objects anymore
+            return True
+        else:
+            return QtCore.QObject.eventFilter(self, obj, event)
 
 
 class LinkArrayTestTaskPanel:
@@ -35,11 +47,14 @@ class LinkArrayTestTaskPanel:
         self.form = Gui.PySideUic.loadUi(uiLocation)
         self.baseSelect = False  # used to know if we are looking for bases
         self.obs = None
-        shortcut = QtGui.QShortcut(QtGui.QKeySequence.Delete, self.form.baseList)  # shortcut to delete key
+        self.form.baseList.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
+        self.form.baseList.installEventFilter(CustomEventFilter(self.form.baseList))
+        delAction = QtGui.QAction("Delete", self.form.baseList)
+        delAction.setShortcut(QtGui.QKeySequence.Delete)
+        self.form.baseList.addAction(delAction)
         # connect signals and slots
         self.form.baseSelect.clicked.connect(self.baseSelectClick)
-
-        QtCore.QObject.connect(shortcut, QtCore.SIGNAL("activated()"), self.deketeSel)  # To delete elements in list
+        QtCore.QObject.connect(delAction, QtCore.SIGNAL("triggered()"), self.test)
 
     def baseSelectClick(self):
         if not self.baseSelect:
@@ -64,7 +79,12 @@ class LinkArrayTestTaskPanel:
         if self.obs is not None:
             Gui.Selection.removeObserver(self.obs)  # make sure that the selection observer is deleted
 
-    def deketeSel(self):
+    def deleteSelectedItems(self):
+        selItems = self.form.baseList.selectedItems()
+        if selItems is not None:
+            print(selItems)
+
+    def test(self):
         print("hello")
 
 
