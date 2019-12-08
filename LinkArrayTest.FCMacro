@@ -2,6 +2,7 @@
 
 from os.path import expanduser
 from PySide import QtGui, QtCore
+import Draft
 
 home = expanduser("~")
 uiLocation = home + "/.FreeCAD/Macro/LinkArrayTest.ui" # Location I used to store the .ui file
@@ -10,7 +11,6 @@ uiLocation = home + "/.FreeCAD/Macro/LinkArrayTest.ui" # Location I used to stor
 def onDelete(key):
     if key == QtCore.Qt.Key_Delete:
         print("delete")
-
 
 
 class SelectionObserver:
@@ -24,7 +24,11 @@ class SelectionObserver:
         # Note that if an object inside a sub-assembly is selected, this method will get the entire sub-assembly
         splitedName = test.SubElementNames[0].split(".")
         if self.selList and not self.selList.findItems(splitedName[0], QtCore.Qt.MatchExactly):
-            self.selList.addItem(splitedName[0])
+            if self.selList.count() < 1:
+                self.selList.addItem(splitedName[0])
+            else:
+                self.selList.takeItem(0)
+                self.selList.addItem(splitedName[0])
 
 
 class CustomEventFilter(QtCore.QObject):
@@ -46,31 +50,59 @@ class LinkArrayTestTaskPanel:
     def __init__(self):
         self.form = Gui.PySideUic.loadUi(uiLocation)
         self.baseSelect = False  # used to know if we are looking for bases
+        self.centerSelect = False   # The same than for baseSelect
         self.obs = None
+        # Setup of objects
         self.form.baseList.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
+        self.form.centerList.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
+        self.form.centerList.installEventFilter(CustomEventFilter(self.form.centerList))
         self.form.baseList.installEventFilter(CustomEventFilter(self.form.baseList))
-        delAction = QtGui.QAction("Delete", self.form.baseList)
-        delAction.setShortcut(QtGui.QKeySequence.Delete)
-        self.form.baseList.addAction(delAction)
+        self.setActions()           # Adding actions to objects
         # connect signals and slots
         self.form.baseSelect.clicked.connect(self.baseSelectClick)
-        QtCore.QObject.connect(delAction, QtCore.SIGNAL("triggered()"), self.test)
+        self.form.centerSelect.clicked.connect(self.centerSelectClick)
+
+    def setActions(self):
+        baseListDelete = QtGui.QAction("Delete", self.form.baseList)
+        centerListDelete = QtGui.QAction("Delete", self.form.baseList)
+        centerListDelete.setShortcut(QtGui.QKeySequence.Delete)
+        baseListDelete.setShortcut(QtGui.QKeySequence.Delete)
+        baseListDelete.setShortcutContext(QtCore.Qt.WidgetWithChildrenShortcut)
+        centerListDelete.setShortcutContext(QtCore.Qt.WidgetWithChildrenShortcut)
+        self.form.baseList.addAction(baseListDelete)
+        self.form.centerList.addAction(centerListDelete)
+        QtCore.QObject.connect(baseListDelete, QtCore.SIGNAL("triggered()"), self.deleteSelectedItems)
+        QtCore.QObject.connect(centerListDelete, QtCore.SIGNAL("triggered()"), self.deleteSelectedItems)
 
     def baseSelectClick(self):
         if not self.baseSelect:
+            self.clearSelections()
             self.form.baseSelect.setText("Selecting")
             self.obs = SelectionObserver(self.form.baseList)
             Gui.Selection.addObserver(self.obs)
-
         else:
             self.form.baseSelect.setText("Select")
             self.obs.selList = None     # stop selecting more items
             Gui.Selection.removeObserver(self.obs)
-            #self.deleteKeyCb =
         self.baseSelect = not self.baseSelect   # Toggle every time the button is pressed
 
+    def centerSelectClick(self):
+        if not self.centerSelect:
+            self.clearSelections()
+            self.form.centerSelect.setText("Selecting")
+            self.obs = SelectionObserver(self.form.centerList)
+            Gui.Selection.addObserver(self.obs)
+        else:
+            self.form.centerSelect.setText("Select")
+            self.obs.setList = None     # stop selecting more items
+            Gui.Selection.removeObserver(self.obs)
+        self.centerSelect = not self.centerSelect
+
     def accept(self):
+        self.clearSelections()
         Gui.Control.closeDialog()
+        if self.form.baseList.count() > 0:
+            self.createArray()
         if self.obs is not None:
             Gui.Selection.removeObserver(self.obs)  # make sure that the selection observer is deleted
 
@@ -80,16 +112,33 @@ class LinkArrayTestTaskPanel:
             Gui.Selection.removeObserver(self.obs)  # make sure that the selection observer is deleted
 
     def deleteSelectedItems(self):
-        selItems = self.form.baseList.selectedItems()
-        if selItems is not None:
-            print(selItems)
+        baseSelItems = self.form.baseList.selectedItems()
+        centerSelItems = self.form.centerList.selectedItems()
+        if baseSelItems:
+            for item in baseSelItems:
+                self.form.baseList.takeItem(self.form.baseList.row(item))
+        if centerSelItems:
+            for item in centerSelItems:
+                self.form.centerList.takeItem(self.form.baseList.row(item))
 
-    def test(self):
-        print("hello")
+    def clearSelections(self):
+        # make sure to not have both selection buttons on
+        if self.baseSelect:
+            self.baseSelectClick()
+        if self.centerSelect:
+            self.centerSelectClick()
+
+    def createArray(self):
+        base = App.ActiveDocument.getObject(self.form.baseList.item(0).text())
+        name = self.form.nameEdit.text()
+
+        # Assuming we are making arrays of links
+        if self.form.arrayType.currentText() == "Polar":
+            baseCenter = base.Placement.Base
+            center = App.Vector(0, 0, 0) - baseCenter
+            Draft.makeArray(base, center, 360, 5,  name=name, useLink=True)
+            App.ActiveDocument.recompute()
 
 
 panel = LinkArrayTestTaskPanel()
 Gui.Control.showDialog(panel)
-
-#obs = SelectionObserver()
-#Gui.Selection.addObserver(obs)

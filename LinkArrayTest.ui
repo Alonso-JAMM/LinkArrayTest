@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>323</width>
-    <height>312</height>
+    <height>222</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -37,7 +37,7 @@
      <property name="maximumSize">
       <size>
        <width>16777215</width>
-       <height>100</height>
+       <height>30</height>
       </size>
      </property>
      <property name="selectionMode">
@@ -46,7 +46,7 @@
     </widget>
    </item>
    <item row="6" column="1">
-    <widget class="QListWidget" name="listWidget_2">
+    <widget class="QListWidget" name="centerList">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
        <horstretch>0</horstretch>
@@ -56,13 +56,13 @@
      <property name="maximumSize">
       <size>
        <width>16777215</width>
-       <height>70</height>
+       <height>30</height>
       </size>
      </property>
     </widget>
    </item>
    <item row="3" column="1">
-    <widget class="QComboBox" name="comboBox">
+    <widget class="QComboBox" name="arrayType">
      <item>
       <property name="text">
        <string>Polar</string>
@@ -81,7 +81,11 @@
     </widget>
    </item>
    <item row="4" column="1">
-    <widget class="QLineEdit" name="lineEdit"/>
+    <widget class="QLineEdit" name="nameEdit">
+     <property name="text">
+      <string>Array</string>
+     </property>
+    </widget>
    </item>
    <item row="1" column="0" colspan="2">
     <widget class="QLabel" name="label">
