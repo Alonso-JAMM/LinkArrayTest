@@ -4,8 +4,12 @@ from os.path import expanduser
 from PySide import QtGui, QtCore
 import Draft
 
-home = expanduser("~")
-uiLocation = home + "/.FreeCAD/Macro/LinkArrayTest.ui" # Location I used to store the .ui file
+# Better way of looking for the ui
+param = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Macro")
+macroPath = param.GetString("MacroPath", "") + "/"
+uiLocation = path.replace("\\", "/")
+uiLocation = uiLocation + "LinkArrayTest.ui"
+
 
 
 def onDelete(key):
