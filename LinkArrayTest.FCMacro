@@ -134,10 +134,7 @@ class LinkArrayTestTaskPanel:
 
         # Assuming we are making arrays of links
         if self.form.arrayType.currentText() == "Polar":
-            if self.form.centerList.count() > 0:
-                center = App.ActiveDocument.getObject(self.form.centerList.item(0).text())
-            else:
-                center = App.Vector(0, 0, 0)
+            center = App.ActiveDocument.getObject(self.form.centerList.item(0).text())
             baseCenter = base.Placement.Base
             centerCenter = center.Placement.Base
             ArrayCenter = centerCenter - baseCenter
