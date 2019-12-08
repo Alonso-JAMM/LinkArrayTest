@@ -134,11 +134,18 @@ class LinkArrayTestTaskPanel:
 
         # Assuming we are making arrays of links
         if self.form.arrayType.currentText() == "Polar":
+            if self.form.centerList.count() > 0:
+                center = App.ActiveDocument.getObject(self.form.centerList.item(0).text())
+            else:
+                center = App.Vector(0, 0, 0)
             baseCenter = base.Placement.Base
-            center = App.Vector(0, 0, 0) - baseCenter
-            Draft.makeArray(base, center, 360, 5,  name=name, useLink=True)
-            App.ActiveDocument.recompute()
-
+            centerCenter = center.Placement.Base
+            ArrayCenter = centerCenter - baseCenter
+            Draft.makeArray(base, ArrayCenter, 360, 5,  name=name, useLink=True)
+        else:
+            Draft.makeArray(base, App.Vector(10, 0, 0),
+                            App.Vector(0, 1, 0), 2, 1, useLink=True, name=name)
+        App.ActiveDocument.recompute()
 
 panel = LinkArrayTestTaskPanel()
 Gui.Control.showDialog(panel)
